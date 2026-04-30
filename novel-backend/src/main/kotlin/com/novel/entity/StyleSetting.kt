@@ -45,31 +45,3 @@ class StyleSetting(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 )
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "novel_id", nullable = false, unique = true)
-    var novel: Novel = Novel(),
-
-    @Column(length = 50)
-    var tone: String? = null,
-
-    @Column(length = 50)
-    var perspective: String? = null,
-
-    @Column(name = "target_audience", length = 100)
-    var targetAudience: String? = null,
-
-    @Column(name = "style_description", columnDefinition = "TEXT")
-    var styleDescription: String? = null,
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-)

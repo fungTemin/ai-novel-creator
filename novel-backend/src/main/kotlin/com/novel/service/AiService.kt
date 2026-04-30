@@ -2,12 +2,16 @@ package com.novel.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.novel.ai.AiProvider
 import com.novel.config.AiConfig
 import com.novel.dto.request.*
 import com.novel.dto.response.*
 import com.novel.entity.Chapter
 import com.novel.entity.Novel
+import org.springframework.ai.chat.messages.SystemMessage
+import org.springframework.ai.chat.messages.UserMessage
+import org.springframework.ai.chat.model.ChatModel
+import org.springframework.ai.chat.prompt.Prompt
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 // AI 智能服务，统筹调用 AI 大模型完成小说创作中的各类任务
@@ -15,8 +19,8 @@ import org.springframework.stereotype.Service
 @Service
 class AiService(
     private val aiConfig: AiConfig,
-    private val deepSeekProvider: AiProvider,
-    private val xiaoMiProvider: AiProvider,
+    @Qualifier("deepSeekChatModel") private val deepSeekChatModel: ChatModel,
+    @Qualifier("xiaoMiChatModel") private val xiaoMiChatModel: ChatModel,
     private val novelService: NovelService,
     private val chapterService: ChapterService,
     private val characterService: CharacterService,
@@ -26,13 +30,22 @@ class AiService(
     private val objectMapper: ObjectMapper
 ) {
 
-    // 获取当前默认的 AI 模型提供商（deepseek / xiaomi）
-    private fun getProvider(): AiProvider {
+    // 获取当前默认的 AI 模型提供商对应的 Spring AI ChatModel
+    private fun getChatModel(): ChatModel {
         return when (aiConfig.defaultProvider.lowercase()) {
-            "deepseek" -> deepSeekProvider
-            "xiaomi" -> xiaoMiProvider
-            else -> deepSeekProvider
+            "deepseek" -> deepSeekChatModel
+            "xiaomi" -> xiaoMiChatModel
+            else -> deepSeekChatModel
         }
+    }
+
+    // 通过 Spring AI ChatModel 统一调用 AI
+    private fun callModel(systemPrompt: String, userMessage: String): String {
+        val chatModel = getChatModel()
+        val prompt = Prompt(listOf(SystemMessage(systemPrompt), UserMessage(userMessage)))
+        val response = chatModel.call(prompt)
+        val result = response.result ?: throw RuntimeException("AI 响应为空")
+        return result.output.text
     }
 
     // ============================================================
@@ -65,7 +78,7 @@ class AiService(
 """.trimIndent()
 
         // 调用 AI 模型获取响应，解析 JSON 并逐个保存大纲条目
-        val response = getProvider().generateCompletion(systemPrompt, "请为我生成小说大纲")
+        val response = callModel(systemPrompt, "请为我生成小说大纲")
         try {
             val result: Map<String, List<Map<String, String>>> = objectMapper.readValue(extractJson(response))
             val outlines = result["outlines"] ?: emptyList()
@@ -115,7 +128,7 @@ class AiService(
 }
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请为我创建一个角色")
+        val response = callModel(systemPrompt, "请为我创建一个角色")
         return try {
             val charData: Map<String, String> = objectMapper.readValue(extractJson(response))
             characterService.createCharacter(novelId, userId, CharacterRequest(
@@ -164,7 +177,7 @@ ${existingAll.joinToString("\n") { "- [${it.category}] ${it.name}: ${it.descript
 ]
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请批量生成世界观设定")
+        val response = callModel(systemPrompt, "请批量生成世界观设定")
         return try {
             val entries: List<Map<String, Any>> = objectMapper.readValue(extractJson(response))
             entries.map { entry ->
@@ -207,7 +220,7 @@ ${categories.joinToString("\n") { "- $it" }}
 注意：分类名用英文，如 geography, culture, magic_system, history, species, politics, economy, religion, technology, ecology 等
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请推荐世界观分类")
+        val response = callModel(systemPrompt, "请推荐世界观分类")
         return try {
             val result: List<Map<String, Any>> = objectMapper.readValue(extractJson(response))
             result.map {
@@ -267,7 +280,7 @@ ${existingText.ifEmpty { "无" }}
 }
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请扩展世界观细节")
+        val response = callModel(systemPrompt, "请扩展世界观细节")
         return try {
             val data: Map<String, Any> = objectMapper.readValue(extractJson(response))
             val updatedDesc = data["description"] as? String ?: existing.description
@@ -324,7 +337,7 @@ $worldText
 ]
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请审查世界观一致性")
+        val response = callModel(systemPrompt, "请审查世界观一致性")
         return try {
             val result: List<Map<String, String>> = objectMapper.readValue(extractJson(response))
             result.map {
@@ -392,7 +405,7 @@ $charText
 }
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请审查大纲")
+        val response = callModel(systemPrompt, "请审查大纲")
         return try {
             val data: Map<String, Any> = objectMapper.readValue(extractJson(response))
 
@@ -484,7 +497,7 @@ ${if (targetOutline != null) "【需要展开的大纲】${targetOutline.orderIn
 }
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请扩展情节")
+        val response = callModel(systemPrompt, "请扩展情节")
         return try {
             val result: Map<String, List<Map<String, String>>> = objectMapper.readValue(extractJson(response))
             val newOutlines = result["outlines"] ?: emptyList()
@@ -544,7 +557,7 @@ $keyPoint
 ]
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请提供情节分支")
+        val response = callModel(systemPrompt, "请提供情节分支")
         return try {
             val result: List<Map<String, String>> = objectMapper.readValue(extractJson(response))
             result.map {
@@ -607,7 +620,7 @@ $charText
 ]
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请进行角色弧线整合分析")
+        val response = callModel(systemPrompt, "请进行角色弧线整合分析")
         return try {
             val result: List<Map<String, Any>> = objectMapper.readValue(extractJson(response))
             result.map {
@@ -670,7 +683,7 @@ $charText
 }
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请分析伏笔设计")
+        val response = callModel(systemPrompt, "请分析伏笔设计")
         return try {
             val data: Map<String, Any> = objectMapper.readValue(extractJson(response))
 
@@ -747,7 +760,7 @@ ${worldItems.joinToString("\n") { "- [${it.category}] ${it.name}: ${it.descripti
 请直接返回章节正文内容，不要包含章节标题（如"第X章 XXX"）。
 """.trimIndent()
 
-        val content = getProvider().generateCompletion(systemPrompt, "请撰写本章内容")
+        val content = callModel(systemPrompt, "请撰写本章内容")
         val cleanContent = cleanChapterContent(content)
 
         return GenerateContentResponse(
@@ -788,7 +801,7 @@ ${worldItems.joinToString("\n") { "- [${it.category}] ${it.name}: ${it.descripti
 }
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请为我创建设定")
+        val response = callModel(systemPrompt, "请为我创建设定")
         return try {
             val data: Map<String, Any> = objectMapper.readValue(extractJson(response))
             worldBuildingService.create(novelId, userId, WorldBuildingRequest(
@@ -843,7 +856,7 @@ ${textToRevise}
 }
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请修订以上内容")
+        val response = callModel(systemPrompt, "请修订以上内容")
         return try {
             val data: Map<String, Any> = objectMapper.readValue(extractJson(response))
             val revisedContent = data["revised_content"] as? String ?: throw RuntimeException("没有修订内容")

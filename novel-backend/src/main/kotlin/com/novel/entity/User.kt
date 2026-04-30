@@ -36,24 +36,3 @@ class User(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 )
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
-
-    @Column(nullable = false, unique = true, length = 50)
-    var username: String = "",
-
-    @Column(nullable = false, unique = true, length = 100)
-    var email: String = "",
-
-    @Column(name = "password_hash", nullable = false)
-    var passwordHash: String = "",
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-)

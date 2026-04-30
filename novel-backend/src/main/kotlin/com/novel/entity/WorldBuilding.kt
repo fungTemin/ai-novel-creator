@@ -45,31 +45,3 @@ class WorldBuilding(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 )
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "novel_id", nullable = false)
-    var novel: Novel = Novel(),
-
-    @Column(nullable = false, length = 50)
-    var category: String = "",
-
-    @Column(nullable = false, length = 200)
-    var name: String = "",
-
-    @Column(columnDefinition = "TEXT")
-    var description: String? = null,
-
-    @Column(columnDefinition = "TEXT")
-    var details: String? = null,
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-)

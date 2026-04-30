@@ -53,37 +53,3 @@ class Character(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 )
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "novel_id", nullable = false)
-    var novel: Novel = Novel(),
-
-    @Column(nullable = false, length = 100)
-    var name: String = "",
-
-    @Column(length = 50)
-    var role: String? = null,
-
-    @Column(columnDefinition = "TEXT")
-    var description: String? = null,
-
-    @Column(columnDefinition = "TEXT")
-    var personality: String? = null,
-
-    @Column(columnDefinition = "TEXT")
-    var background: String? = null,
-
-    @Column(columnDefinition = "TEXT")
-    var relationships: String? = null,
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-)

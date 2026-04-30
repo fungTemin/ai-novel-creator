@@ -41,28 +41,3 @@ class PlotOutline(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 )
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "novel_id", nullable = false)
-    var novel: Novel = Novel(),
-
-    @Column(nullable = false, length = 200)
-    var title: String = "",
-
-    @Column(columnDefinition = "TEXT")
-    var summary: String? = null,
-
-    @Column(name = "order_index", nullable = false)
-    var orderIndex: Int = 0,
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-)

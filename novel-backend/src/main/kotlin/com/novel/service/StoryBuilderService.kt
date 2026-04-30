@@ -2,12 +2,17 @@ package com.novel.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.novel.ai.AiProvider
 import com.novel.config.AiConfig
 import com.novel.dto.request.*
 import com.novel.dto.response.*
 import com.novel.entity.Novel
 import com.novel.repository.NovelRepository
+// 引入 Spring AI 的 ChatModel 接口和 Prompt 构建类
+import org.springframework.ai.chat.messages.SystemMessage
+import org.springframework.ai.chat.messages.UserMessage
+import org.springframework.ai.chat.model.ChatModel
+import org.springframework.ai.chat.prompt.Prompt
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
 
@@ -16,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap
 @Service
 class StoryBuilderService(
     private val aiConfig: AiConfig,
-    private val deepSeekProvider: AiProvider,
-    private val xiaoMiProvider: AiProvider,
+    @Qualifier("deepSeekChatModel") private val deepSeekChatModel: ChatModel,
+    @Qualifier("xiaoMiChatModel") private val xiaoMiChatModel: ChatModel,
     private val novelService: NovelService,
     private val characterService: CharacterService,
     private val worldBuildingService: WorldBuildingService,
@@ -42,13 +47,21 @@ class StoryBuilderService(
         val completedSteps: MutableList<StoryStep> = mutableListOf()
     )
 
-    // 获取当前默认 AI 模型提供商
-    private fun getProvider(): AiProvider {
+    // 获取当前默认 AI 模型提供商对应的 Spring AI ChatModel
+    private fun getChatModel(): ChatModel {
         return when (aiConfig.defaultProvider.lowercase()) {
-            "deepseek" -> deepSeekProvider
-            "xiaomi" -> xiaoMiProvider
-            else -> deepSeekProvider
+            "deepseek" -> deepSeekChatModel
+            "xiaomi" -> xiaoMiChatModel
+            else -> deepSeekChatModel
         }
+    }
+
+    // 通过 Spring AI ChatModel 统一调用 AI，传入系统提示和用户消息，返回 AI 生成的文本
+    private fun callModel(systemPrompt: String, userMessage: String): String {
+        val chatModel = getChatModel()
+        val prompt = Prompt(listOf(SystemMessage(systemPrompt), UserMessage(userMessage)))
+        val response = chatModel.call(prompt)
+        return response.result.output?.text ?: ""
     }
 
     // 生成会话缓存键
@@ -140,7 +153,7 @@ $message
 - 如果梗概已经比较完整，给出肯定并询问是否继续前进
 """.trimIndent()
 
-        val aiResponse = getProvider().generateCompletion(systemPrompt, "请给作者提供反馈和引导")
+        val aiResponse = callModel(systemPrompt, "请给作者提供反馈和引导")
         session.contextSummary["story_premise"] = message
 
         val canProceed = message.length > 30
@@ -173,7 +186,7 @@ $premise
 请以友好、建议的口吻给出推荐，并解释每个推荐的理由。最后询问作者是否认同这些建议，或者是否有自己的想法。
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请推荐题材和风格")
+        val response = callModel(systemPrompt, "请推荐题材和风格")
         session.contextSummary["genre_style"] = response
         return buildStepResponse(session, response, canProceed = true)
     }
@@ -219,7 +232,7 @@ ${existingText.ifEmpty { "暂无" }}
 如果有已有角色，请补充和完善。最后问作者希望手动创建、让 AI 生成具体角色档案，还是继续下一步。
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请设计角色阵容")
+        val response = callModel(systemPrompt, "请设计角色阵容")
         session.contextSummary["character_concept"] = response
         return buildStepResponse(session, response, canProceed = true,
             options = listOf("让 AI 生成完整角色档案", "自己手动添加角色", "继续下一步"))
@@ -266,7 +279,7 @@ ${existingText.ifEmpty { "暂无" }}
 请给出框架性建议，不需要过于详细。最后询问作者是否要 AI 生成具体设定，或自己补充。
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请构建世界观框架")
+        val response = callModel(systemPrompt, "请构建世界观框架")
         session.contextSummary["world_concept"] = response
         return buildStepResponse(session, response, canProceed = true,
             options = listOf("AI 生成详细设定", "自己手动添加设定", "继续下一步"))
@@ -325,7 +338,7 @@ $world
 生成后请以友好的方式展示给作者，并询问是否满意或需要调整。
 """.trimIndent()
 
-        val response = getProvider().generateCompletion(systemPrompt, "请生成完整大纲")
+        val response = callModel(systemPrompt, "请生成完整大纲")
         session.contextSummary["plot_outline"] = response
 
         try {

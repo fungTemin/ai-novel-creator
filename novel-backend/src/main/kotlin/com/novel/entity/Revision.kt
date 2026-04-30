@@ -35,24 +35,3 @@ class Revision(
     @Column(name = "created_at", updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now()
 )
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chapter_id", nullable = false)
-    var chapter: Chapter = Chapter(),
-
-    @Column(name = "original_content", columnDefinition = "TEXT")
-    var originalContent: String? = null,
-
-    @Column(name = "revised_content", columnDefinition = "TEXT")
-    var revisedContent: String? = null,
-
-    @Column(columnDefinition = "TEXT")
-    var feedback: String? = null,
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now()
-)

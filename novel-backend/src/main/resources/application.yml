@@ -27,21 +27,28 @@ spring:
       write-dates-as-timestamps: false
     time-zone: Asia/Shanghai
 
+  # 禁用 Spring AI 默认的 OpenAI 自动配置
+  autoconfigure:
+    exclude: org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+
+# JWT 认证配置
 jwt:
   secret: ${JWT_SECRET:myDefaultSecretKeyForDevelopmentOnlyPleaseChangeInProduction2024}
-  expiration: 86400000  # 24 hours in milliseconds
+  expiration: 86400000  # 24 小时（毫秒）
 
+# ─── AI 模型提供商配置（自定义格式，由 AiConfig 读取） ───
+# 每个提供商通过 AiProviderConfig → Spring AI ChatModel Bean 使用
 ai:
   default-provider: deepseek
   providers:
     deepseek:
-      api-url: https://api.deepseek.com/v1/chat/completions
+      base-url: https://api.deepseek.com
       api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key}
       model: deepseek-chat
       max-tokens: 4096
       temperature: 0.8
     xiaomi:
-      api-url: ${XIAOMI_API_URL:https://api.xiaomi.com/v1/chat/completions}
+      base-url: ${XIAOMI_API_URL:https://api.xiaomi.com/v1}
       api-key: ${XIAOMI_API_KEY:your-xiaomi-api-key}
       model: ${XIAOMI_MODEL:default}
       max-tokens: 4096
@@ -50,4 +57,3 @@ ai:
 logging:
   level:
     com.novel: DEBUG
-    org.springframework.security: DEBUG
