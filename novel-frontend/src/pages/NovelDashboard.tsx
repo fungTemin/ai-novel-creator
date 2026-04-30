@@ -768,10 +768,6 @@ export default function NovelDashboard() {
         )}
       </Modal>
 
-      {/* 分类建议触发前表单 Modal */}
-      <Modal title="设置分类建议参数" open={!!(suggestForm && !suggestCategoryModal)} onOk={handleSuggestCategories} onCancel={() => {}} confirmLoading={categoryLoading} okText="获取建议" footer={null}>
-      </Modal>
-
       {/* 一致性检查结果 Modal */}
       <Modal title="世界观一致性检查" open={consistencyModal} onCancel={() => setConsistencyModal(false)} footer={<Button onClick={() => setConsistencyModal(false)}>关闭</Button>} width={700}>
         {consistencyResults.length === 0 ? (
