@@ -66,6 +66,7 @@ export default function NovelDashboard() {
   const [reviewPlotModal, setReviewPlotModal] = useState(false);
   const [plotReviewResult, setPlotReviewResult] = useState<PlotReviewResult | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewParamModal, setReviewParamModal] = useState(false);
   const [expandPlotModal, setExpandPlotModal] = useState(false);
   const [expandPlotLoading, setExpandPlotLoading] = useState(false);
   const [branchModal, setBranchModal] = useState(false);
@@ -342,9 +343,11 @@ export default function NovelDashboard() {
       const values = await reviewForm.validateFields();
       const res = await aiApi.reviewPlot(novelId, { focus: values.focus || 'consistency' });
       setPlotReviewResult(res.data.data);
+      setReviewParamModal(false);
       setReviewPlotModal(true);
     } catch (error: any) {
       message.error(error.response?.data?.message || '审查失败');
+      setReviewParamModal(false);
     } finally {
       setReviewLoading(false);
     }
@@ -562,7 +565,7 @@ export default function NovelDashboard() {
               <Button icon={<RobotOutlined />} onClick={() => { setAiModal('plot'); aiForm.resetFields(); }}>
                 生成大纲
               </Button>
-              <Button icon={<CheckCircleOutlined />} onClick={handleReviewPlot} loading={reviewLoading}>
+              <Button icon={<CheckCircleOutlined />} onClick={() => setReviewParamModal(true)} loading={reviewLoading}>
                 审查大纲
               </Button>
               <Button icon={<ExpandOutlined />} onClick={() => { setExpandPlotModal(true); expandPlotForm.resetFields(); }}>
@@ -804,7 +807,8 @@ export default function NovelDashboard() {
       </Modal>
 
       {/* 审查大纲 Modal - 触发前参数 */}
-      <Modal title="审查大纲参数" open={!!(reviewForm && !reviewPlotModal)} onOk={handleReviewPlot} onCancel={() => {}} confirmLoading={reviewLoading} okText="开始审查" footer={null}>
+      {/* 审查大纲参数设定模态框 */}
+      <Modal title="审查大纲参数" open={reviewParamModal} onOk={handleReviewPlot} onCancel={() => setReviewParamModal(false)} confirmLoading={reviewLoading} okText="开始审查">
       </Modal>
 
       {/* 审查结果 Modal */}

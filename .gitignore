@@ -37,3 +37,7 @@ Thumbs.db
 # Environment
 .env
 *.env
+
+# Spring Boot local override
+application-local.yml
+application-local.properties

@@ -1,11 +1,13 @@
+# ─── 公共配置（提交到 Git，不含敏感信息） ───
+# 本地覆盖配置请放 application-local.yml，通过 --spring.profiles.active=local 激活
 server:
   port: 8080
 
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/novel_db
-    username: postgres
-    password: postgres
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -14,7 +16,6 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
   flyway:
@@ -27,33 +28,29 @@ spring:
       write-dates-as-timestamps: false
     time-zone: Asia/Shanghai
 
-  # 禁用 Spring AI 默认的 OpenAI 自动配置
   autoconfigure:
     exclude: org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
 
-# JWT 认证配置
 jwt:
-  secret: ${JWT_SECRET:myDefaultSecretKeyForDevelopmentOnlyPleaseChangeInProduction2024}
-  expiration: 86400000  # 24 小时（毫秒）
+  secret: ${JWT_SECRET:change-me-in-production}
+  expiration: 86400000
 
-# ─── AI 模型提供商配置（自定义格式，由 AiConfig 读取） ───
-# 每个提供商通过 AiProviderConfig → Spring AI ChatModel Bean 使用
 ai:
   default-provider: deepseek
   providers:
     deepseek:
       base-url: https://api.deepseek.com
-      api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key}
+      api-key: ${DEEPSEEK_API_KEY:}
       model: deepseek-chat
       max-tokens: 4096
       temperature: 0.8
     xiaomi:
       base-url: ${XIAOMI_API_URL:https://api.xiaomi.com/v1}
-      api-key: ${XIAOMI_API_KEY:your-xiaomi-api-key}
+      api-key: ${XIAOMI_API_KEY:}
       model: ${XIAOMI_MODEL:default}
       max-tokens: 4096
       temperature: 0.8
 
 logging:
   level:
-    com.novel: DEBUG
+    com.novel: INFO
